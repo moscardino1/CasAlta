@@ -1,2 +1,10 @@
 python3 -m venv venv
 source venv/bin/activate
+
+
+to deploy
+    cd casalta 
+    vercel deploy
+
+to prod:
+    vercel --prod 

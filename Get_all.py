@@ -14,7 +14,7 @@ def write_file_contents(directory, output_file):
                     with open(filepath, "r") as file:
                         f.write(file.read())
                     f.write("\n")
-        elif os.path.isdir(filepath) and filename != "venv" :
+        elif os.path.isdir(filepath) and filename != "venv"   and filename != "node_modules" :
             write_file_contents(filepath, output_file)
 
 # Example usage

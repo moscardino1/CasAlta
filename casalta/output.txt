@@ -1,4 +1,27 @@
- 
+ ===== /Users/alessandrocarli/CasAlta/Get_all.py  =====
+import os
+
+def write_file_contents(directory, output_file):
+    """
+    Recursively writes the contents of all .css, .html, and .py files in a directory and its subdirectories, excluding the 'venv' folder, to the specified output file.
+    """
+    for filename in os.listdir(directory):
+        filepath = os.path.join(directory, filename)
+        if os.path.isfile(filepath):
+            # if filepath.endswith(".css") or filepath.endswith(".html") or filepath.endswith(".py") and filename !='Get_all.py':
+            if filepath.endswith(".py") or filepath.endswith(".html") or filepath.endswith(".js") and filename !='Get_all.py':
+                with open(output_file, "a") as f:
+                    f.write(f"===== {filepath}  =====\n")
+                    with open(filepath, "r") as file:
+                        f.write(file.read())
+                    f.write("\n")
+        elif os.path.isdir(filepath) and filename != "venv"   and filename != "node_modules" :
+            write_file_contents(filepath, output_file)
+
+# Example usage
+output_filepath = "output.txt"
+write_file_contents("/Users/alessandrocarli/CasAlta/", output_filepath)
+print(f"Output written to {output_filepath}")
 ===== /Users/alessandrocarli/CasAlta/casalta/static/js/calculate.js  =====
 function calculate() {
     let formData = {
@@ -32,38 +55,74 @@ function calculate() {
 ===== /Users/alessandrocarli/CasAlta/casalta/static/js/updateResults.js  =====
 function updateResults(response) {
     // Format the numbers using toLocaleString()
-    const inputCurrencyFormatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: response.input_currency,
-        minimumFractionDigits: 2
-    });
+     
+        const inputCurrencyFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: response.input_currency,
+            minimumFractionDigits: 2
+        });
+    
+        const outputCurrencyFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: response.output_currency,
+            minimumFractionDigits: 2
+        });
+    
+        // Add a formatter for per person values
+        const perPersonFormatter = (value) => {
+            if (response.couple) {
+                return inputCurrencyFormatter.format(value / 2);
+            } else {
+                return '';
+            }
+        };
 
-    const outputCurrencyFormatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: response.output_currency,
-        minimumFractionDigits: 2
-    });
-    // Add a formatter for per person values
-    const perPersonFormatter = (value) => {
-        return `(${inputCurrencyFormatter.format(value / 2)})`;
-    };
     $('#resultsContainer').html(`
-        <div class="row">
+         <div class="row">
             <div class="col-md-12">
                 <div class="cluster-box">
                     <h3>Loan Details</h3>
                     <table class="table">
-                        <tr>
-                            <th></th>
-                            <th>${response.input_currency}</th>
-                            <th>${response.output_currency}</th>
-                            ${response.couple ? '<th>Per Person</th>' : ''}
-                        </tr>
-                        <tr><td>Upfront Payment</td><td>${inputCurrencyFormatter.format(response.upfront)}</td><td>${outputCurrencyFormatter.format(response.output_upfront)}</td>${response.couple ? `<td>${perPersonFormatter(response.upfront)}</td>` : ''}</tr>
-                        <tr><td>Loan Amount</td><td>${inputCurrencyFormatter.format(response.loan_amount)}</td><td>${outputCurrencyFormatter.format(response.output_loan_amount)}</td>${response.couple ? `<td>${perPersonFormatter(response.loan_amount)}</td>` : ''}</tr>
-                        <tr><td>Monthly Interest Rate</td><td>${(response.monthly_interest_rate * 100).toFixed(2)}%</td><td>${(response.monthly_interest_rate * 100).toFixed(2)}%</td><td></td></tr>
-                        <tr><td>Number of Payments</td><td>${response.num_payments}</td><td>${response.num_payments}</td><td></td></tr>
-                        <tr><td>Monthly Payment</td><td>${inputCurrencyFormatter.format(response.monthly_payment)}</td><td>${outputCurrencyFormatter.format(response.output_monthly_payment)}</td>${response.couple ? `<td>${perPersonFormatter(response.monthly_payment)}</td>` : ''}</tr>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>${response.input_currency}</th>
+                                <th>${response.output_currency}</th>
+                                ${response.couple ? '<th>Per Person (Input Currency)</th><th>Per Person (Output Currency)</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Upfront Payment</td>
+                                <td>${inputCurrencyFormatter.format(response.upfront)}</td>
+                                <td>${outputCurrencyFormatter.format(response.output_upfront)}</td>
+                                ${response.couple ? `<td>${perPersonFormatter(response.upfront)}</td><td>${outputCurrencyFormatter.format(response.output_upfront / 2)}</td>` : ''}
+                            </tr>
+                            <tr>
+                                <td>Loan Amount</td>
+                                <td>${inputCurrencyFormatter.format(response.loan_amount)}</td>
+                                <td>${outputCurrencyFormatter.format(response.output_loan_amount)}</td>
+                                ${response.couple ? `<td>${perPersonFormatter(response.loan_amount)}</td><td>${outputCurrencyFormatter.format(response.output_loan_amount / 2)}</td>` : ''}
+                            </tr>
+                            <tr>
+                                <td>Monthly Interest Rate</td>
+                                <td>${(response.monthly_interest_rate * 100).toFixed(2)}%</td>
+                                <td>${(response.monthly_interest_rate * 100).toFixed(2)}%</td>
+                                ${response.couple ? `<td></td><td></td>` : ''}
+                            </tr>
+                            <tr>
+                                <td>Number of Payments</td>
+                                <td>${response.num_payments}</td>
+                                <td>${response.num_payments}</td>
+                                ${response.couple ? `<td></td><td></td>` : ''}
+                            </tr>
+                            <tr>
+                                <td>Monthly Payment</td>
+                                <td>${inputCurrencyFormatter.format(response.monthly_payment)}</td>
+                                <td>${outputCurrencyFormatter.format(response.output_monthly_payment)}</td>
+                                ${response.couple ? `<td>${perPersonFormatter(response.monthly_payment)}</td><td>${outputCurrencyFormatter.format(response.output_monthly_payment / 2)}</td>` : ''}
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -78,10 +137,12 @@ function updateResults(response) {
                             <th></th>
                             <th>${response.input_currency}</th>
                             <th>${response.output_currency}</th>
+                            ${response.couple ? '<th>Per Person (Input Currency)</th><th>Per Person (Output Currency)</th>' : ''}
+
                         </tr>
-                        <tr><td>Yearly Revenue</td><td>${inputCurrencyFormatter.format(response.yearly_revenue)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_revenue)}</td></tr>
-                        <tr><td>Yearly Expenses</td><td>${inputCurrencyFormatter.format(response.yearly_expenses)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_expenses)}</td></tr>
-                        <tr><td>Profit Before Tax</td><td>${inputCurrencyFormatter.format(response.profit_before_tax)}</td><td>${outputCurrencyFormatter.format(response.output_profit_before_tax)}</td></tr>
+                        <tr><td>Yearly Revenue</td><td>${inputCurrencyFormatter.format(response.yearly_revenue)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_revenue)}</td> ${response.couple ? `<td>${perPersonFormatter(response.yearly_revenue)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_revenue / 2)}</td>` : ''}</tr>
+                        <tr><td>Yearly Expenses</td><td>${inputCurrencyFormatter.format(response.yearly_expenses)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_expenses)}</td>${response.couple ? `<td>${perPersonFormatter(response.yearly_expenses)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_expenses / 2)}</td>` : ''}</tr>
+                        <tr><td>Profit Before Tax</td><td>${inputCurrencyFormatter.format(response.profit_before_tax)}</td><td>${outputCurrencyFormatter.format(response.output_profit_before_tax)}</td>${response.couple ? `<td>${perPersonFormatter(response.profit_before_tax)}</td><td>${outputCurrencyFormatter.format(response.output_profit_before_tax / 2)}</td>` : ''}</tr>
                     </table>
                 </div>
             </div>
@@ -96,6 +157,7 @@ function updateResults(response) {
                             <th>Year</th>
                             <th>${response.input_currency}</th>
                             <th>${response.output_currency}</th>
+ 
                         </tr>
                         ${response.house_value_over_years.map((value, index) => `
                             <tr>
@@ -118,11 +180,13 @@ function updateResults(response) {
                             <th></th>
                             <th>${response.input_currency}</th>
                             <th>${response.output_currency}</th>
+                            ${response.couple ? '<th>Per Person (Input Currency)</th><th>Per Person (Output Currency)</th>' : ''}
+
                         </tr>
-                        <tr><td>House Price</td><td>${inputCurrencyFormatter.format(response.price)}</td><td>${outputCurrencyFormatter.format(response.price * response.exchange_rate)}</td></tr>
-                        <tr><td>Renovation Cost</td><td>${inputCurrencyFormatter.format(response.renovation_cost)}</td><td>${outputCurrencyFormatter.format(response.output_renovation_cost)}</td></tr>
-                        <tr><td>Furniture Cost</td><td>${inputCurrencyFormatter.format(response.furniture_cost)}</td><td>${outputCurrencyFormatter.format(response.output_furniture_cost)}</td></tr>
-                        <tr><th>Total Cost</th><td>${inputCurrencyFormatter.format(response.total_cost)}</td><td>${outputCurrencyFormatter.format(response.output_total_cost)}</td></tr>
+                        <tr><td>House Price</td><td>${inputCurrencyFormatter.format(response.price)}</td><td>${outputCurrencyFormatter.format(response.output_price)}</td> ${response.couple ? `<td>${perPersonFormatter(response.price)}</td><td>${outputCurrencyFormatter.format(response.output_price / 2)}</td>` : ''}</tr>
+                        <tr><td>Renovation Cost</td><td>${inputCurrencyFormatter.format(response.renovation_cost)}</td><td>${outputCurrencyFormatter.format(response.output_renovation_cost)}</td> ${response.couple ? `<td>${perPersonFormatter(response.renovation_cost)}</td><td>${outputCurrencyFormatter.format(response.output_renovation_cost / 2)}</td>` : ''}</tr>
+                        <tr><td>Furniture Cost</td><td>${inputCurrencyFormatter.format(response.furniture_cost)}</td><td>${outputCurrencyFormatter.format(response.output_furniture_cost)}</td> ${response.couple ? `<td>${perPersonFormatter(response.furniture_cost)}</td><td>${outputCurrencyFormatter.format(response.output_furniture_cost / 2)}</td>` : ''}</tr>
+                        <tr><th>Total Cost</th><td>${inputCurrencyFormatter.format(response.total_cost)}</td><td>${outputCurrencyFormatter.format(response.output_total_cost)}</td> ${response.couple ? `<td>${perPersonFormatter(response.total_cost)}</td><td>${outputCurrencyFormatter.format(response.output_total_cost / 2)}</td>` : ''}</tr>
                     </table>
                 </div>
             </div>
@@ -207,7 +271,9 @@ def calculate():
     
     # Costs including renovation and furniture
     total_cost = price + renovation_cost + furniture_cost
-    
+    # Calculate per person values if couple is selected
+   
+
     output_monthly_payment = monthly_payment * exchange_rate
     output_yearly_revenue = yearly_revenue * exchange_rate
     output_yearly_expenses = yearly_expenses * exchange_rate
@@ -218,6 +284,7 @@ def calculate():
     output_renovation_cost = renovation_cost * exchange_rate
     output_furniture_cost = furniture_cost * exchange_rate
     output_total_cost = total_cost * exchange_rate
+    output_price = price * exchange_rate
 
     results = {
     'monthly_payment': monthly_payment,
@@ -252,6 +319,7 @@ def calculate():
     'output_renovation_cost': output_renovation_cost,
     'output_furniture_cost': output_furniture_cost,
     'output_total_cost': output_total_cost,
+    'output_price': output_price,
     'currency': input_currency  # Add this line
 }
     
@@ -386,9 +454,16 @@ if __name__ == '__main__':
         </div>
 
     <!-- Include jQuery and calculate.js -->
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+      </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+      <script defer src="/_vercel/speed-insights/script.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="static/js/updateResults.js"></script>
     <script src="static/js/calculate.js"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4265503582637482"
+    crossorigin="anonymous"></script>
 </body>
 
 </html>
@@ -419,8 +494,14 @@ if __name__ == '__main__':
             </div>
         </div>
     </div>
-
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+      </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+      <script defer src="/_vercel/speed-insights/script.js"></script>
     <script src="static/js/updateResults.js"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4265503582637482"
+     crossorigin="anonymous"></script>
 </body>
 
 </html>

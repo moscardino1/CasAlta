@@ -1,1 +1,19 @@
- 
+.container {
+    margin-top: 20px;
+}
+.cluster-box {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+h1 {
+    margin-bottom: 40px;
+}
+.result-card {
+    margin-bottom: 20px;
+}
+.table {
+    margin-top: 10px;
+}
