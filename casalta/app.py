@@ -12,6 +12,10 @@ def index():
         'upfront': 65,
         'int_rate': 3.20,
         'rent_per_night': 145,
+        'occupancy': 1,
+        'taxes': 60,
+        'cleaning': 60,
+        'bills': 60,
         'currency': 'EUR',
         'couple': 'yes',
         'renovation_cost': 10000,
@@ -29,6 +33,10 @@ def calculate():
     upfront_percentage = float(data['upfront'])
     int_rate = float(data['int_rate'])
     rent_per_night = float(data['rent_per_night'])
+    occupancy = float(data['occupancy'])
+    taxes = float(data['taxes'])
+    cleaning = float(data['cleaning'])
+    bills = float(data['bills'])
     input_currency = data['input_currency']
     output_currency = data['output_currency']
     exchange_rate = float(data['exchange_rate'])
@@ -41,11 +49,11 @@ def calculate():
     else:
         exchange_rate = float(data['exchange_rate'])
     # Extract pre-compiled values for occupancy and expenses forecast
-    occupancy = [0.2, 0.0, 0.0, 0.2, 0.0, 0.7, 0.7, 0.0, 0.7, 0.7, 0.2, 0.2]
+    occupancy =   occupancy  
     monthly_expenses = {
-        'taxes': 60,
-        'cleaning': 60,
-        'bills': 60
+        'taxes': taxes,
+        'cleaning': cleaning,
+        'bills': bills
     }
     
     # Calculations
@@ -55,7 +63,7 @@ def calculate():
     num_payments = years * 12
     monthly_payment = loan_amount * (monthly_interest_rate * (1 + monthly_interest_rate) ** num_payments) / ((1 + monthly_interest_rate) ** num_payments - 1)
     
-    yearly_revenue = sum([occupancy[i] * 30 * rent_per_night for i in range(12)])
+    yearly_revenue = (occupancy *12 * 30 * rent_per_night )
     yearly_expenses = sum(monthly_expenses.values()) * 12
     
     profit_before_tax = yearly_revenue - yearly_expenses
