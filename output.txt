@@ -1,0 +1,502 @@
+
+===== /Users/alessandrocarli/CasAlta/casalta/static/js/calculate.js  =====
+function calculate() {
+    let formData = {
+        mq: $('#mq').val(),
+        price: $('#price').val(),
+        years: $('#years').val(),
+        upfront: $('#upfront').val(),
+        int_rate: $('#int_rate').val(),
+        rent_per_night: $('#rent_per_night').val(),
+        occupancy: $('#occupancy').val(),
+        taxes: $('#taxes').val(),
+        cleaning: $('#cleaning').val(),
+        bills: $('#bills').val(),
+        rent_per_night: $('#rent_per_night').val(),
+        input_currency: $('#input_currency').val(),
+        output_currency: $('#output_currency').val(),
+        exchange_rate: $('#exchange_rate').val(),
+        couple: $('#couple').is(':checked') ? 'yes' : 'no',
+        renovation_cost: $('#renovation_cost').val(),
+        furniture_cost: $('#furniture_cost').val(),
+        appreciation_rate: $('#appreciation_rate').val()
+    };
+    $.ajax({
+        type: 'POST',
+        url: '/calculate',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function (response) {
+            updateResults(response);
+        },
+        error: function (xhr, status, error) {
+            console.error('AJAX Error:', error);
+        }
+    });
+}
+===== /Users/alessandrocarli/CasAlta/casalta/static/js/updateResults.js  =====
+function updateResults(response) {
+    // Format the numbers using toLocaleString()
+     
+        const inputCurrencyFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: response.input_currency,
+            minimumFractionDigits: 2
+        });
+    
+        const outputCurrencyFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: response.output_currency,
+            minimumFractionDigits: 2
+        });
+    
+        // Add a formatter for per person values
+        const perPersonFormatter = (value) => {
+            if (response.couple) {
+                return inputCurrencyFormatter.format(value / 2);
+            } else {
+                return '';
+            }
+        };
+
+    $('#resultsContainer').html(`
+         <div class="row">
+            <div class="col-md-12">
+                <div class="cluster-box">
+                    <h3>Loan Details</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>${response.input_currency}</th>
+                                <th>${response.output_currency}</th>
+                                ${response.couple ? '<th>Per Person (Input Currency)</th><th>Per Person (Output Currency)</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Upfront Payment</td>
+                                <td>${inputCurrencyFormatter.format(response.upfront)}</td>
+                                <td>${outputCurrencyFormatter.format(response.output_upfront)}</td>
+                                ${response.couple ? `<td>${perPersonFormatter(response.upfront)}</td><td>${outputCurrencyFormatter.format(response.output_upfront / 2)}</td>` : ''}
+                            </tr>
+                            <tr>
+                                <td>Loan Amount</td>
+                                <td>${inputCurrencyFormatter.format(response.loan_amount)}</td>
+                                <td>${outputCurrencyFormatter.format(response.output_loan_amount)}</td>
+                                ${response.couple ? `<td>${perPersonFormatter(response.loan_amount)}</td><td>${outputCurrencyFormatter.format(response.output_loan_amount / 2)}</td>` : ''}
+                            </tr>
+                            <tr>
+                                <td>Monthly Interest Rate</td>
+                                <td>${(response.monthly_interest_rate * 100).toFixed(2)}%</td>
+                                <td>${(response.monthly_interest_rate * 100).toFixed(2)}%</td>
+                                ${response.couple ? `<td></td><td></td>` : ''}
+                            </tr>
+                            <tr>
+                                <td>Number of Payments</td>
+                                <td>${response.num_payments}</td>
+                                <td>${response.num_payments}</td>
+                                ${response.couple ? `<td></td><td></td>` : ''}
+                            </tr>
+                            <tr>
+                                <td>Monthly Payment</td>
+                                <td>${inputCurrencyFormatter.format(response.monthly_payment)}</td>
+                                <td>${outputCurrencyFormatter.format(response.output_monthly_payment)}</td>
+                                ${response.couple ? `<td>${perPersonFormatter(response.monthly_payment)}</td><td>${outputCurrencyFormatter.format(response.output_monthly_payment / 2)}</td>` : ''}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="cluster-box">
+                    <h3>Revenue and Expenses</h3>
+                    <table class="table">
+                        <tr>
+                            <th></th>
+                            <th>${response.input_currency}</th>
+                            <th>${response.output_currency}</th>
+                            ${response.couple ? '<th>Per Person (Input Currency)</th><th>Per Person (Output Currency)</th>' : ''}
+
+                        </tr>
+                        <tr><td>Yearly Revenue</td><td>${inputCurrencyFormatter.format(response.yearly_revenue)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_revenue)}</td> ${response.couple ? `<td>${perPersonFormatter(response.yearly_revenue)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_revenue / 2)}</td>` : ''}</tr>
+                        <tr><td>Yearly Expenses</td><td>${inputCurrencyFormatter.format(response.yearly_expenses)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_expenses)}</td>${response.couple ? `<td>${perPersonFormatter(response.yearly_expenses)}</td><td>${outputCurrencyFormatter.format(response.output_yearly_expenses / 2)}</td>` : ''}</tr>
+                        <tr><td>Profit Before Tax</td><td>${inputCurrencyFormatter.format(response.profit_before_tax)}</td><td>${outputCurrencyFormatter.format(response.output_profit_before_tax)}</td>${response.couple ? `<td>${perPersonFormatter(response.profit_before_tax)}</td><td>${outputCurrencyFormatter.format(response.output_profit_before_tax / 2)}</td>` : ''}</tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="cluster-box">
+                    <h3>House Value Over Years</h3>
+                    <table class="table">
+                        <tr>
+                            <th>Year</th>
+                            <th>${response.input_currency}</th>
+                            <th>${response.output_currency}</th>
+ 
+                        </tr>
+                        ${response.house_value_over_years.map((value, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${inputCurrencyFormatter.format(value)}</td>
+                                <td>${outputCurrencyFormatter.format(response.output_house_value_over_years[index])}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="cluster-box">
+                    <h3>Costs including Renovation and Furniture</h3>
+                    <table class="table">
+                        <tr>
+                            <th></th>
+                            <th>${response.input_currency}</th>
+                            <th>${response.output_currency}</th>
+                            ${response.couple ? '<th>Per Person (Input Currency)</th><th>Per Person (Output Currency)</th>' : ''}
+
+                        </tr>
+                        <tr><td>House Price</td><td>${inputCurrencyFormatter.format(response.price)}</td><td>${outputCurrencyFormatter.format(response.output_price)}</td> ${response.couple ? `<td>${perPersonFormatter(response.price)}</td><td>${outputCurrencyFormatter.format(response.output_price / 2)}</td>` : ''}</tr>
+                        <tr><td>Renovation Cost</td><td>${inputCurrencyFormatter.format(response.renovation_cost)}</td><td>${outputCurrencyFormatter.format(response.output_renovation_cost)}</td> ${response.couple ? `<td>${perPersonFormatter(response.renovation_cost)}</td><td>${outputCurrencyFormatter.format(response.output_renovation_cost / 2)}</td>` : ''}</tr>
+                        <tr><td>Furniture Cost</td><td>${inputCurrencyFormatter.format(response.furniture_cost)}</td><td>${outputCurrencyFormatter.format(response.output_furniture_cost)}</td> ${response.couple ? `<td>${perPersonFormatter(response.furniture_cost)}</td><td>${outputCurrencyFormatter.format(response.output_furniture_cost / 2)}</td>` : ''}</tr>
+                        <tr><th>Total Cost</th><td>${inputCurrencyFormatter.format(response.total_cost)}</td><td>${outputCurrencyFormatter.format(response.output_total_cost)}</td> ${response.couple ? `<td>${perPersonFormatter(response.total_cost)}</td><td>${outputCurrencyFormatter.format(response.output_total_cost / 2)}</td>` : ''}</tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `);
+}
+// Trigger calculation on input change
+$('#simulationForm input, #simulationForm select').on('input change', function () {
+    calculate();
+});
+
+// Initial calculation on page load
+$(document).ready(function () {
+    calculate();
+});
+
+===== /Users/alessandrocarli/CasAlta/casalta/app.py  =====
+from flask import Flask, render_template, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    # Pre-filled default values
+    default_values = {
+        'mq': 70,
+        'price': 450000,
+        'years': 5,
+        'upfront': 65,
+        'int_rate': 3.20,
+        'rent_per_night': 145,
+        'occupancy': 1,
+        'taxes': 60,
+        'cleaning': 60,
+        'bills': 60,
+        'currency': 'EUR',
+        'couple': 'yes',
+        'renovation_cost': 10000,
+        'furniture_cost': 5000,
+        'appreciation_rate': 3.0
+    }
+    return render_template('index.html', default_values=default_values)
+
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    data = request.json
+    mq = float(data['mq'])
+    price = float(data['price'])
+    years = int(data['years'])
+    upfront_percentage = float(data['upfront'])
+    int_rate = float(data['int_rate'])
+    rent_per_night = float(data['rent_per_night'])
+    occupancy = float(data['occupancy'])
+    taxes = float(data['taxes'])
+    cleaning = float(data['cleaning'])
+    bills = float(data['bills'])
+    input_currency = data['input_currency']
+    output_currency = data['output_currency']
+    exchange_rate = float(data['exchange_rate'])
+    couple = data['couple'] == 'yes'
+    renovation_cost = float(data['renovation_cost'])
+    furniture_cost = float(data['furniture_cost'])
+    appreciation_rate = float(data['appreciation_rate']) / 100
+    if input_currency == output_currency:
+        exchange_rate = 1.0
+    else:
+        exchange_rate = float(data['exchange_rate'])
+    # Extract pre-compiled values for occupancy and expenses forecast
+    occupancy =   occupancy  
+    monthly_expenses = {
+        'taxes': taxes,
+        'cleaning': cleaning,
+        'bills': bills
+    }
+    
+    # Calculations
+    upfront = price * upfront_percentage / 100
+    loan_amount = price - upfront
+    monthly_interest_rate = int_rate / 100 / 12
+    num_payments = years * 12
+    monthly_payment = loan_amount * (monthly_interest_rate * (1 + monthly_interest_rate) ** num_payments) / ((1 + monthly_interest_rate) ** num_payments - 1)
+    
+    yearly_revenue = (occupancy *12 * 30 * rent_per_night )
+    yearly_expenses = sum(monthly_expenses.values()) * 12
+    
+    profit_before_tax = yearly_revenue - yearly_expenses
+    
+    # House value over years
+    house_value_over_years = [price * ((1 + appreciation_rate) ** i) for i in range(1, years + 1)]
+    
+    # Costs including renovation and furniture
+    total_cost = price + renovation_cost + furniture_cost
+    # Calculate per person values if couple is selected
+   
+
+    output_monthly_payment = monthly_payment * exchange_rate
+    output_yearly_revenue = yearly_revenue * exchange_rate
+    output_yearly_expenses = yearly_expenses * exchange_rate
+    output_profit_before_tax = profit_before_tax * exchange_rate
+    output_upfront = upfront * exchange_rate
+    output_loan_amount = loan_amount * exchange_rate
+    output_house_value_over_years = [value * exchange_rate for value in house_value_over_years]
+    output_renovation_cost = renovation_cost * exchange_rate
+    output_furniture_cost = furniture_cost * exchange_rate
+    output_total_cost = total_cost * exchange_rate
+    output_price = price * exchange_rate
+
+    results = {
+    'monthly_payment': monthly_payment,
+    'yearly_revenue': yearly_revenue,
+    'yearly_expenses': yearly_expenses,
+    'profit_before_tax': profit_before_tax,
+    'input_currency': input_currency,
+    'output_currency': output_currency,
+    'exchange_rate': exchange_rate,
+    'couple': couple,
+    'upfront': upfront,
+    'loan_amount': loan_amount,
+    'monthly_interest_rate': monthly_interest_rate,
+    'num_payments': num_payments,
+    'mq': mq,
+    'price': price,
+    'years': years,
+    'upfront_percentage': upfront_percentage,
+    'int_rate': int_rate,
+    'rent_per_night': rent_per_night,
+    'house_value_over_years': house_value_over_years,
+    'renovation_cost': renovation_cost,
+    'furniture_cost': furniture_cost,
+    'total_cost': total_cost,
+    'output_monthly_payment': output_monthly_payment,
+    'output_yearly_revenue': output_yearly_revenue,
+    'output_yearly_expenses': output_yearly_expenses,
+    'output_profit_before_tax': output_profit_before_tax,
+    'output_upfront': output_upfront,
+    'output_loan_amount': output_loan_amount,
+    'output_house_value_over_years': output_house_value_over_years,
+    'output_renovation_cost': output_renovation_cost,
+    'output_furniture_cost': output_furniture_cost,
+    'output_total_cost': output_total_cost,
+    'output_price': output_price,
+    'currency': input_currency  # Add this line
+}
+    
+    return jsonify(results)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+===== /Users/alessandrocarli/CasAlta/casalta/templates/index.html  =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Buying Simulator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href='static/style.css'>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">House Buying Simulator</h1>
+        <form id="simulationForm">
+            <div class="row">
+                <!-- Basic Information -->
+                <div class="col-md-3">
+                    <div class="cluster-box">
+                        <h3>Basic Information</h3>
+                        <div class="mb-3">
+                            <label for="mq">MQ:</label>
+                            <input type="number" class="form-control" id="mq" name="mq" value="{{ default_values.mq }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="price">Price:</label>
+                            <input type="number" class="form-control" id="price" name="price" value="{{ default_values.price }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="years">Years:</label>
+                            <input type="number" class="form-control" id="years" name="years" value="{{ default_values.years }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="input_currency">Input Currency:</label>
+                            <select class="form-select" id="input_currency" name="input_currency">
+                                <option value="EUR" selected>EUR</option>
+                                <option value="CAD">CAD</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="output_currency">Output Currency:</label>
+                            <select class="form-select" id="output_currency" name="output_currency">
+                                <option value="EUR">EUR</option>
+                                <option value="CAD" selected>CAD</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="exchange_rate">Exchange Rate (Input/Output):</label>
+                            <input type="number" class="form-control" id="exchange_rate" name="exchange_rate" value="1.5" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Details -->
+                <div class="col-md-3">
+                    <div class="cluster-box">
+                        <h3>Financial Details</h3>
+                        <div class="mb-3">
+                            <label for="upfront">Upfront %:</label>
+                            <input type="number" class="form-control" id="upfront" name="upfront" value="{{ default_values.upfront }}" step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label for="int_rate">Interest Rate %:</label>
+                            <input type="number" class="form-control" id="int_rate" name="int_rate" value="{{ default_values.int_rate }}" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rental and Costs -->
+                <div class="col-md-3">
+                    <div class="cluster-box">
+                        <h3>Rental and Costs</h3>
+                        <div class="mb-3">
+                            <label for="rent_per_night">Rent per Night:</label>
+                            <input type="number" class="form-control" id="rent_per_night" name="rent_per_night" value="{{ default_values.rent_per_night }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="occupancy">Occupancy rate:</label>
+                            <input type="number" class="form-control" id="occupancy" name="occupancy" value="1">
+                        </div>                        <div class="mb-3">
+                            <label for="taxes">Taxes:</label>
+                            <input type="number" class="form-control" id="taxes" name="taxes" value="60">
+                        </div>
+                        <div class="mb-3">
+                            <label for="cleaning">Cleaning:</label>
+                            <input type="number" class="form-control" id="cleaning" name="cleaning" value="60">
+                        </div>
+                        <div class="mb-3">
+                            <label for="bills">Bills:</label>
+                            <input type="number" class="form-control" id="bills" name="bills" value="60">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="renovation_cost">Renovation Cost:</label>
+                            <input type="number" class="form-control" id="renovation_cost" name="renovation_cost" value="{{ default_values.renovation_cost }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="furniture_cost">Furniture Cost:</label>
+                            <input type="number" class="form-control" id="furniture_cost" name="furniture_cost" value="{{ default_values.furniture_cost }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Details -->
+                <div class="col-md-3">
+                    <div class="cluster-box">
+                        <h3>Additional Details</h3>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="couple" name="couple" {% if default_values.couple=='yes' %}checked{% endif %}>
+                            <label for="couple" class="form-check-label">Couple</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="appreciation_rate">Appreciation Rate %:</label>
+                            <input type="number" class="form-control" id="appreciation_rate" name="appreciation_rate" value="{{ default_values.appreciation_rate }}" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Results Section -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="cluster-box">
+                    <h3>Results</h3>
+                    <div id="resultsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+      </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+      <script defer src="/_vercel/speed-insights/script.js"></script>
+    <script src="static/js/updateResults.js"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4265503582637482"
+     crossorigin="anonymous"></script>
+    <script src="static/js/calculate.js"></script>
+    <script src="static/js/updateResults.js"></script>
+</body>
+</html>
+
+===== /Users/alessandrocarli/CasAlta/casalta/templates/results.html  =====
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Buying Simulator - Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">House Buying Simulator - Results</h1>
+        
+        <!-- Results Section -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="cluster-box">
+                    <h3>Results</h3>
+                    <div id="resultsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+      </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+      <script defer src="/_vercel/speed-insights/script.js"></script>
+    <script src="static/js/updateResults.js"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4265503582637482"
+     crossorigin="anonymous"></script>
+</body>
+
+</html>
+
