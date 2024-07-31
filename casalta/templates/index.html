@@ -3,151 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>House Buying Simulator</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href='static/style.css'>
+    <title>Interactive Mortgage Calculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center mb-4">House Buying Simulator</h1>
-        <form id="simulationForm">
-            <div class="row">
-                <!-- Basic Information -->
-                <div class="col-md-3">
-                    <div class="cluster-box">
-                        <h3>Basic Information</h3>
-                        <div class="mb-3">
-                            <label for="mq">MQ:</label>
-                            <input type="number" class="form-control" id="mq" name="mq" value="{{ default_values.mq }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="price">Price:</label>
-                            <input type="number" class="form-control" id="price" name="price" value="{{ default_values.price }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="years">Years:</label>
-                            <input type="number" class="form-control" id="years" name="years" value="{{ default_values.years }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="input_currency">Input Currency:</label>
-                            <select class="form-select" id="input_currency" name="input_currency">
-                                <option value="EUR" selected>EUR</option>
-                                <option value="CAD">CAD</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="output_currency">Output Currency:</label>
-                            <select class="form-select" id="output_currency" name="output_currency">
-                                <option value="EUR">EUR</option>
-                                <option value="CAD" selected>CAD</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="exchange_rate">Exchange Rate (Input/Output):</label>
-                            <input type="number" class="form-control" id="exchange_rate" name="exchange_rate" value="1.5" step="0.01">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Financial Details -->
-                <div class="col-md-3">
-                    <div class="cluster-box">
-                        <h3>Financial Details</h3>
-                        <div class="mb-3">
-                            <label for="upfront">Upfront %:</label>
-                            <input type="number" class="form-control" id="upfront" name="upfront" value="{{ default_values.upfront }}" step="0.01">
-                        </div>
-                        <div class="mb-3">
-                            <label for="int_rate">Interest Rate %:</label>
-                            <input type="number" class="form-control" id="int_rate" name="int_rate" value="{{ default_values.int_rate }}" step="0.01">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Rental and Costs -->
-                <div class="col-md-3">
-                    <div class="cluster-box">
-                        <h3>Rental and Costs</h3>
-                        <div class="mb-3">
-                            <label for="rent_per_night">Rent per Night:</label>
-                            <input type="number" class="form-control" id="rent_per_night" name="rent_per_night" value="{{ default_values.rent_per_night }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="occupancy">Occupancy rate:</label>
-                            <input type="number" class="form-control" id="occupancy" name="occupancy" value="1">
-                        </div>                        <div class="mb-3">
-                            <label for="taxes">Taxes:</label>
-                            <input type="number" class="form-control" id="taxes" name="taxes" value="60">
-                        </div>
-                        <div class="mb-3">
-                            <label for="cleaning">Cleaning:</label>
-                            <input type="number" class="form-control" id="cleaning" name="cleaning" value="60">
-                        </div>
-                        <div class="mb-3">
-                            <label for="bills">Bills:</label>
-                            <input type="number" class="form-control" id="bills" name="bills" value="60">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="renovation_cost">Renovation Cost:</label>
-                            <input type="number" class="form-control" id="renovation_cost" name="renovation_cost" value="{{ default_values.renovation_cost }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="furniture_cost">Furniture Cost:</label>
-                            <input type="number" class="form-control" id="furniture_cost" name="furniture_cost" value="{{ default_values.furniture_cost }}">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Additional Details -->
-                <div class="col-md-3">
-                    <div class="cluster-box">
-                        <h3>Additional Details</h3>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="couple" name="couple" {% if default_values.couple=='yes' %}checked{% endif %}>
-                            <label for="couple" class="form-check-label">Couple</label>
-                        </div>
-                        <div class="mb-3">
-                            <label for="appreciation_rate">Appreciation Rate %:</label>
-                            <input type="number" class="form-control" id="appreciation_rate" name="appreciation_rate" value="{{ default_values.appreciation_rate }}" step="0.01">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </form>
-
-        <!-- Results Section -->
-        <div class="row">
-            <div class="col-md-12">
-                <div class="cluster-box">
-                    <h3>Results</h3>
-                    <div id="resultsContainer"></div>
-                </div>
-            </div>
+        <h1>Interactive Mortgage Calculator</h1>
+        <div class="input-group">
+            <label for="price">Price:</label>
+            <input type="number" id="price" value="100000">
         </div>
-    </div>
-    <script>
-        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-      </script>
-    <script defer src="/_vercel/insights/script.js"></script>
-      <script defer src="/_vercel/speed-insights/script.js"></script>
-    <script src="static/js/updateResults.js"></script>
+        <div class="input-group">
+            <label for="location">Location:</label>
+            <input type="text" id="location" value="Toronto, ON">
+        </div>
+        <div class="input-group">
+            <label for="exchange-rate">Exchange Rate (Results):</label>
+            <input type="number" id="exchange-rate" value="1" step="0.01" min="0">
+        </div>
+        <div class="options" id="options-container">
+            <!-- Options will be dynamically generated here -->
+        </div>
+        <div class="input-group">
+            <label for="scenario">Down payment options:</label>
+            <select id="scenario" onchange="updateCloseCost()">
+                <option value="1">Scenario 1</option>
+                <option value="2">Scenario 2</option>
+                <option value="3">Scenario 3</option>
+                <option value="4">Scenario 4</option>
+            </select>
+        </div>
+       
+        <h2>Financial Overview</h2>
+        <div class="financial-overview">
+            <div id="close-costs">
+                <h3>Cash needed to close</h3>
+                <div class="input-group">
+                    <label>Down payment:</label>
+                    <span id="down-payment"></span>
+                    <span id="down-payment-shared"></span>
+                </div>
+                <div class="input-group">
+                    <label>Lawyer fees:</label>
+                    <input type="number" id="lawyer-fees" value="1000" onchange="updateCloseCost()">
+                    <span id="lawyer-fees-shared"></span>
+                </div>
+                <div class="input-group">
+                    <label>Title insurance:</label>
+                    <input type="number" id="title-insurance" value="900" onchange="updateCloseCost()">
+                    <span id="title-insurance-shared"></span>
+                </div>
+                <div class="input-group">
+                    <label>Home inspection:</label>
+                    <input type="number" id="home-inspection" value="500" onchange="updateCloseCost()">
+                    <span id="home-inspection-shared"></span>
+                </div>
+                <div class="input-group">
+                    <label>Appraisal fees:</label>
+                    <input type="number" id="appraisal-fees" value="300" onchange="updateCloseCost()">
+                    <span id="appraisal-fees-shared"></span>
+                </div>
+                <div class="input-group">
+                    <label>Cash needed to close:</label>
+                    <span id="cash-needed-to-close"></span>
+                    <span id="cash-needed-to-close-shared"></span>
+                </div>
+            </div>
 
-     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4265503582637482"
-     crossorigin="anonymous"></script>
-<!-- banner -->
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-4265503582637482"
-     data-ad-slot="8606986120"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-    <script src="static/js/calculate.js"></script>
-    <script src="static/js/updateResults.js"></script>
+            <div id="monthly-expenses">
+                <h3>Monthly expenses</h3>
+                <div class="input-group">
+                    <label for="property-tax">Property tax:</label>
+                    <input type="number" id="property-tax" value="2000" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="utilities">Utilities:</label>
+                    <input type="number" id="utilities" value="150" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="property-insurance">Property Insurance:</label>
+                    <input type="number" id="property-insurance" value="800" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="phone">Phone:</label>
+                    <input type="number" id="phone" value="50" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="cable">Cable:</label>
+                    <input type="number" id="cable" value="100" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="internet">Internet:</label>
+                    <input type="number" id="internet" value="60" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label>Total Monthly Expenses:</label>
+                    <span id="monthly-expenses-total"></span>
+                </div>
+                <div class="input-group">
+                    <label>Total Monthly Cost:</label>
+                    <span id="total-monthly-cost"></span>
+                </div>
+            </div>
+            <div id="monthly-revenues">
+                <h3>Monthly Revenues</h3>
+
+                <div class="input-group">
+                    <label for="rented-days">Number of rented days:</label>
+                    <input type="number" id="rented-days" value="15" onchange="updateRevenues()">
+                </div>
+                <div class="input-group">
+                    <label for="estimated-rented-price">Estimated rented price per day:</label>
+                    <input type="number" id="estimated-rented-price" value="100" onchange="updateRevenues()">
+                </div>
+                <div class="input-group">
+                    <label>Total Revenue:</label>
+                    <span id="total-revenue"></span>
+                </div>
+                <div class="input-group">
+                    <label>Annual Profit:</label>
+                    <span id="annual-profit"></span>
+                </div>
+                
+            </div>            
+        </div>
+        <h2>Amortization Schedule</h2>
+        <canvas id="amortization-chart" width="800" height="400"></canvas>
+
+        <table id="amortization-table">
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Total Paid</th>
+                    <th>Principal Paid</th>
+                    <th>Interest Paid</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be dynamically generated here -->
+            </tbody>
+        </table>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
