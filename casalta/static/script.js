@@ -126,9 +126,9 @@ function updateCloseCost() {
 
 function updateMonthlyExpenses() {
     const expenses = {
-        propertyTax: parseFloat(document.getElementById('property-tax').value) / 12,
+        propertyTax: parseFloat(document.getElementById('property-tax').value),
         utilities: parseFloat(document.getElementById('utilities').value),
-        propertyInsurance: parseFloat(document.getElementById('property-insurance').value) / 12,
+        propertyInsurance: parseFloat(document.getElementById('property-insurance').value) ,
         phone: parseFloat(document.getElementById('phone').value),
         cable: parseFloat(document.getElementById('cable').value),
         internet: parseFloat(document.getElementById('internet').value)

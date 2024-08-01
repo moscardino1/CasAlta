@@ -1,218 +1,470 @@
 
-===== /Users/alessandrocarli/CasAlta/casalta/static/styles.css  =====
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
 
-.scenarios {
-    display: flex;
-    justify-content: space-between;
-}
-
-.scenario {
-    flex: 1;
-    margin: 10px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background: #f9f9f9;
-}
-
-.scenario h3 {
-    text-align: center;
-}
-
-label {
-    display: block;
-    margin: 10px 0 5px;
-}
-
-input[type="number"] {
-    width: 100%;
-    padding: 5px;
-    margin-bottom: 10px;
-}
-
-button {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #45a049;
-}
-
-.section {
-    margin-top: 20px;
-}
-
-#amortization-chart {
-    max-width: 100%;
-}
 ===== /Users/alessandrocarli/CasAlta/casalta/static/script.js  =====
-document.getElementById('mortgage-form').addEventListener('submit', function (e) {
-    e.preventDefault();
 
-    const scenarios = [];
-    for (let i = 1; i <= 4; i++) {
-        const price = parseFloat(document.getElementById(`price${i}`).value);
-        const downPaymentPercent = parseFloat(document.getElementById(`down-payment-percent${i}`).value);
-        const downPayment = (downPaymentPercent / 100) * price;
-        const interestRate = parseFloat(document.getElementById(`interest-rate${i}`).value);
-        const years = parseInt(document.getElementById(`years${i}`).value);
-        const lawyerFees = parseFloat(document.getElementById(`lawyer-fees${i}`).value);
-        const titleInsurance = parseFloat(document.getElementById(`title-insurance${i}`).value);
-        const homeInspection = parseFloat(document.getElementById(`home-inspection${i}`).value);
-        const appraisalFees = parseFloat(document.getElementById(`appraisal-fees${i}`).value);
-        const otherExpenses = parseFloat(document.getElementById(`other-expenses${i}`).value);
+const optionCount = 4;
 
-        scenarios.push({
-            price,
-            down_payment: downPayment,
-            interest_rate: interestRate,
-            years,
-            lawyer_fees: lawyerFees,
-            title_insurance: titleInsurance,
-            home_inspection: homeInspection,
-            appraisal_fees: appraisalFees,
-            other_expenses: otherExpenses
-        });
+function formatNumber(number) {
+    return number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-        document.getElementById(`down-payment${i}`).value = downPayment.toFixed(2);
+function createOptionElement(index) {
+    return `
+        <div class="option" id="option${index}">
+            <h3>Option ${index}</h3>
+            <div class="input-group">
+                <label for="down-payment-percent-${index}">Down payment %:</label>
+                <input type="number" id="down-payment-percent-${index}" value="20" step="1.00" min="0" max="100">
+            </div>
+            <div class="input-group">
+                <label for="down-payment-amount-${index}">Down payment:</label>
+                <input type="number" id="down-payment-amount-${index}" value="20000" step="10000" min="0">
+            </div>
+            <div class="input-group">
+                <label for="amortization-${index}">Amortization (years):</label>
+                <input type="number" id="amortization-${index}" value="20" min="1" max="40">
+            </div>
+            <div class="input-group">
+                <label for="rate-${index}">Mortgage rate (%):</label>
+                <input type="number" id="rate-${index}" value="2" step="0.1" min="1" max="20">
+            </div>
+            <div class="input-group">
+                <label for="frequency-${index}">Payment frequency:</label>
+                <select id="frequency-${index}">
+                    <option value="monthly">Monthly</option>
+                    <option value="bi-weekly">Bi-weekly</option>
+                </select>
+            </div>
+            <div class="result">
+                <label>Total mortgage:</label>
+                <span id="total-mortgage-${index}"></span>
+                <span id="total-mortgage-${index}-shared"></span>
+            </div>
+            <div class="result">
+                <label>Mortgage Payment:</label>
+                <span id="mortgage-payment-${index}"></span>
+                <span id="mortgage-payment-${index}-shared"></span>
+            </div>
+        </div>
+    `;
+}
+
+function calculateMortgageDetails(price, percent, amount, amortization, rate, frequency) {
+    const totalMortgage = price - amount;
+    const periodicRate = (rate / 100) / (frequency === 'monthly' ? 12 : 26);
+    const numberOfPayments = amortization * (frequency === 'monthly' ? 12 : 26);
+    const mortgagePayment = totalMortgage * 
+        (periodicRate * Math.pow(1 + periodicRate, numberOfPayments)) / 
+        (Math.pow(1 + periodicRate, numberOfPayments) - 1);
+    
+    return { totalMortgage, mortgagePayment };
+}
+
+function updateCalculations() {
+    const price = parseFloat(document.getElementById('price').value);
+    const exchangeRate = parseFloat(document.getElementById('exchange-rate').value);
+
+    for (let i = 1; i <= optionCount; i++) {
+        const percentInput = document.getElementById(`down-payment-percent-${i}`);
+        const amountInput = document.getElementById(`down-payment-amount-${i}`);
+        const amortizationInput = document.getElementById(`amortization-${i}`);
+        const rateInput = document.getElementById(`rate-${i}`);
+        const frequencyInput = document.getElementById(`frequency-${i}`);
+        
+        const percent = parseFloat(percentInput.value);
+        const amount = parseFloat(amountInput.value);
+        const amortization = parseInt(amortizationInput.value);
+        const rate = parseFloat(rateInput.value);
+        const frequency = frequencyInput.value;
+
+        // Update down payment amount or percent
+        if (document.activeElement === percentInput) {
+            amountInput.value = formatNumber(price * percent / 100);
+        } else if (document.activeElement === amountInput) {
+            percentInput.value = formatNumber(amount / price * 100);
+        }
+        
+        const { totalMortgage, mortgagePayment } = calculateMortgageDetails(price, percent, amount, amortization, rate, frequency);
+        const totalMortgageShared = totalMortgage / 2;
+        const mortgagePaymentShared = mortgagePayment / 2;
+        
+        document.getElementById(`total-mortgage-${i}`).textContent = formatNumber(totalMortgage / exchangeRate);
+        document.getElementById(`total-mortgage-${i}-shared`).textContent = `(shared: ${formatNumber(totalMortgageShared / exchangeRate)})`;
+        document.getElementById(`mortgage-payment-${i}`).textContent = formatNumber(mortgagePayment / exchangeRate);
+        document.getElementById(`mortgage-payment-${i}-shared`).textContent = `(shared: ${formatNumber(mortgagePaymentShared / exchangeRate)})`;
+    }
+    updateCloseCost();
+    updateMonthlyExpenses();
+    updateRevenues() 
+}
+
+function updateCloseCost() {
+    const scenario = parseInt(document.getElementById('scenario').value);
+    const exchangeRate = parseFloat(document.getElementById('exchange-rate').value);
+    const costs = {
+        downPayment: parseFloat(document.getElementById(`down-payment-amount-${scenario}`).value),
+        lawyerFees: parseFloat(document.getElementById('lawyer-fees').value),
+        titleInsurance: parseFloat(document.getElementById('title-insurance').value),
+        homeInspection: parseFloat(document.getElementById('home-inspection').value),
+        appraisalFees: parseFloat(document.getElementById('appraisal-fees').value),
+    };
+    
+    const sharedCosts = Object.fromEntries(
+        Object.entries(costs).map(([key, value]) => [`${key}Shared`, value / 2])
+    );
+
+    const cashNeededToClose = Object.values(costs).reduce((sum, cost) => sum + cost, 0);
+    const cashNeededToCloseShared = cashNeededToClose / 2;
+
+    for (const [key, value] of Object.entries(costs)) {
+        document.getElementById(key.replace(/([A-Z])/g, '-$1').toLowerCase()).textContent = formatNumber(value / exchangeRate);
+        document.getElementById(`${key.replace(/([A-Z])/g, '-$1').toLowerCase()}-shared`).textContent = `(shared: ${formatNumber(sharedCosts[`${key}Shared`] / exchangeRate)})`;
     }
 
-    fetch('/calculate', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
+    document.getElementById('cash-needed-to-close').textContent = formatNumber(cashNeededToClose / exchangeRate);
+    document.getElementById('cash-needed-to-close-shared').textContent = `(shared: ${formatNumber(cashNeededToCloseShared / exchangeRate)})`;
+    updateMonthlyExpenses();
+    updateRevenues() 
+}
+
+function updateMonthlyExpenses() {
+    const expenses = {
+        propertyTax: parseFloat(document.getElementById('property-tax').value),
+        utilities: parseFloat(document.getElementById('utilities').value),
+        propertyInsurance: parseFloat(document.getElementById('property-insurance').value) ,
+        phone: parseFloat(document.getElementById('phone').value),
+        cable: parseFloat(document.getElementById('cable').value),
+        internet: parseFloat(document.getElementById('internet').value)
+    };
+
+    const totalMonthlyExpenses = Object.values(expenses).reduce((sum, expense) => sum + expense, 0);
+
+    document.getElementById('monthly-expenses-total').textContent = formatNumber(totalMonthlyExpenses);
+
+    const scenario = parseInt(document.getElementById('scenario').value);
+    const mortgagePayment = parseFloat(document.getElementById(`mortgage-payment-${scenario}`).textContent.replace(/,/g, ''));
+    const totalMonthlyCost = mortgagePayment + totalMonthlyExpenses;
+    
+    document.getElementById('total-monthly-cost').textContent = formatNumber(totalMonthlyCost);
+    updateRevenues() 
+}
+
+function updateRevenues() {
+    const rentedDays = parseFloat(document.getElementById('rented-days').value);
+    const estimatedRentedPrice = parseFloat(document.getElementById('estimated-rented-price').value);
+    const totalMonthlyCost = parseFloat(document.getElementById('total-monthly-cost').textContent.replace(/,/g, ''));
+
+    // Calculate Total Revenue and Annual Profit
+    const totalRevenue = rentedDays * estimatedRentedPrice;
+    const annualProfit = totalRevenue - (totalMonthlyCost * 12);
+
+    // Update the UI
+    document.getElementById('total-revenue').textContent = formatNumber(totalRevenue);
+    document.getElementById('annual-profit').textContent = formatNumber(annualProfit);
+}
+
+// Call updateRevenues initially
+updateRevenues();
+
+document.addEventListener('DOMContentLoaded', function() {
+    const optionsContainer = document.getElementById('options-container');
+    for (let i = 1; i <= optionCount; i++) {
+        optionsContainer.innerHTML += createOptionElement(i);
+    }
+
+    document.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('input', updateCalculations);
+    });
+
+    updateCalculations(); // Initial calculation
+}); 
+// Function to calculate amortization schedule
+function generateAmortizationSchedule(price, amount, amortization, rate, frequency) {
+    const totalMortgage = price - amount;
+    const periodicRate = (rate / 100) / (frequency === 'monthly' ? 12 : 26);
+    const numberOfPayments = amortization * (frequency === 'monthly' ? 12 : 26);
+    
+    // Calculate monthly payment
+    const monthlyPayment = totalMortgage * 
+        (periodicRate * Math.pow(1 + periodicRate, numberOfPayments)) / 
+        (Math.pow(1 + periodicRate, numberOfPayments) - 1);
+
+    let balance = totalMortgage;
+    let totalPaid = 0;
+    let principalPaid = 0;
+    let interestPaid = 0;
+
+    const years = [];
+    const totalPaidData = [];
+    const principalPaidData = [];
+    const interestPaidData = [];
+    const balanceData = [];
+
+    for (let year = 1; year <= amortization; year++) {
+        let yearTotalPaid = 0;
+        let yearPrincipalPaid = 0;
+        let yearInterestPaid = 0;
+        for (let month = 1; month <= 12; month++) {
+            if (balance <= 0) break;
+
+            const interest = balance * periodicRate;
+            const principal = monthlyPayment - interest;
+            yearTotalPaid += monthlyPayment;
+            yearPrincipalPaid += principal;
+            yearInterestPaid += interest;
+
+            balance -= principal;
+            if (balance < 0) balance = 0;
+
+            totalPaid += monthlyPayment;
+            principalPaid += principal;
+            interestPaid += interest;
+        }
+
+        years.push(year);
+        totalPaidData.push(yearTotalPaid);
+        principalPaidData.push(yearPrincipalPaid);
+        interestPaidData.push(yearInterestPaid);
+        balanceData.push(balance);
+    }
+
+    return {
+        years,
+        totalPaidData,
+        principalPaidData,
+        interestPaidData,
+        balanceData
+    };
+}
+
+// Function to update the amortization schedule table
+function updateAmortizationSchedule() {
+    const price = parseFloat(document.getElementById('price').value);
+    const scenario = parseInt(document.getElementById('scenario').value);
+    const amount = parseFloat(document.getElementById(`down-payment-amount-${scenario}`).value);
+    const amortization = parseInt(document.getElementById(`amortization-${scenario}`).value);
+    const rate = parseFloat(document.getElementById(`rate-${scenario}`).value);
+    const frequency = document.getElementById(`frequency-${scenario}`).value;
+
+    const {
+        years,
+        totalPaidData,
+        principalPaidData,
+        interestPaidData,
+        balanceData
+    } = generateAmortizationSchedule(price, amount, amortization, rate, frequency);
+
+    const tableBody = document.getElementById('amortization-table').querySelector('tbody');
+    tableBody.innerHTML = years.map((year, index) => `
+        <tr>
+            <td>${year}</td>
+            <td>${formatNumber(totalPaidData[index])}</td>
+            <td>${formatNumber(principalPaidData[index])}</td>
+            <td>${formatNumber(interestPaidData[index])}</td>
+            <td>${formatNumber(balanceData[index])}</td>
+        </tr>
+    `).join('');
+}
+
+// Format number as currency
+function formatNumber(number) {
+    return number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+let amortizationChart = null; // Variable to store the Chart instance
+
+// Function to clear the existing chart
+function clearChart() {
+    if (amortizationChart) {
+        amortizationChart.destroy();
+        amortizationChart = null;
+    }
+}
+
+// Function to draw the amortization chart
+function drawAmortizationChart(years, totalPaidData, principalPaidData, interestPaidData, balanceData) {
+    const ctx = document.getElementById('amortization-chart').getContext('2d');
+    
+    clearChart(); // Clear the previous chart instance
+
+    amortizationChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'Principal Paid',
+                    data: principalPaidData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    stack: 'stack1',
+                    type: 'bar'
+                },
+                {
+                    label: 'Interest Paid',
+                    data: interestPaidData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    stack: 'stack1',
+                    type: 'bar'
+                },
+                {
+                    label: 'Balance',
+                    type: 'line',
+                    data: balanceData,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    yAxisID: 'y-axis-2'
+                }
+            ]
         },
-        body: JSON.stringify({ scenarios })
-    })
-    .then(response => response.json())
-    .then(data => {
-        let resultHTML = '';
-        let cashNeededHTML = '';
-        let labels = data[0].amortization_schedule.map(schedule => schedule.month);
-        let datasets = [];
-
-        data.forEach((scenario, index) => {
-            resultHTML += `<p>Scenario ${index + 1} Monthly Payment: ${scenario.mortgage_payment.toFixed(2)}</p>`;
-            cashNeededHTML += `<p>Scenario ${index + 1} Cash Needed to Close: ${scenario.cash_needed_to_close.toFixed(2)}</p>`;
-            datasets.push({
-                label: `Scenario ${index + 1} Principal`,
-                data: scenario.amortization_schedule.map(schedule => schedule.principal_payment),
-                backgroundColor: `rgba(${index * 50}, ${index * 50 + 100}, 192, 0.2)`,
-                borderColor: `rgba(${index * 50}, ${index * 50 + 100}, 192, 1)`,
-                borderWidth: 1
-            });
-            datasets.push({
-                label: `Scenario ${index + 1} Interest`,
-                data: scenario.amortization_schedule.map(schedule => schedule.interest_payment),
-                backgroundColor: `rgba(${index * 50 + 100}, 99, 132, 0.2)`,
-                borderColor: `rgba(${index * 50 + 100}, 99, 132, 1)`,
-                borderWidth: 1
-            });
-        });
-
-        document.getElementById('mortgage-result').innerHTML = resultHTML;
-        document.getElementById('cash-needed-result').innerHTML = cashNeededHTML;
-
-        const ctx = document.getElementById('amortization-chart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: datasets
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
+                        }
                     }
                 }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Year'
+                    },
+                    beginAtZero: true
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Amount ($)'
+                    },
+                    beginAtZero: true
+                },
+                'y-axis-2': {
+                    type: 'linear',
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Balance ($)'
+                    },
+                    beginAtZero: true
+                }
             }
-        });
-    });
-});
-
-for (let i = 1; i <= 4; i++) {
-    document.getElementById(`down-payment-percent${i}`).addEventListener('input', function () {
-        const price = parseFloat(document.getElementById(`price${i}`).value);
-        const percent = parseFloat(document.getElementById(`down-payment-percent${i}`).value);
-        const downPayment = (percent / 100) * price;
-        document.getElementById(`down-payment${i}`).value = downPayment.toFixed(2);
-    });
-
-    document.getElementById(`down-payment${i}`).addEventListener('input', function () {
-        const price = parseFloat(document.getElementById(`price${i}`).value);
-        const downPayment = parseFloat(document.getElementById(`down-payment${i}`).value);
-        const percent = (downPayment / price) * 100;
-        document.getElementById(`down-payment-percent${i}`).value = percent.toFixed(2);
+        }
     });
 }
 
+// Function to generate amortization schedule data
+function generateAmortizationSchedule(price, amount, amortization, rate, frequency) {
+    const totalMortgage = price - amount;
+    const periodicRate = (rate / 100) / (frequency === 'monthly' ? 12 : 26);
+    const numberOfPayments = amortization * (frequency === 'monthly' ? 12 : 26);
+    
+    // Calculate monthly payment
+    const monthlyPayment = totalMortgage * 
+        (periodicRate * Math.pow(1 + periodicRate, numberOfPayments)) / 
+        (Math.pow(1 + periodicRate, numberOfPayments) - 1);
+
+    let balance = totalMortgage;
+    let totalPaid = 0;
+    let principalPaid = 0;
+    let interestPaid = 0;
+
+    const years = [];
+    const totalPaidData = [];
+    const principalPaidData = [];
+    const interestPaidData = [];
+    const balanceData = [];
+
+    for (let year = 1; year <= amortization; year++) {
+        let yearTotalPaid = 0;
+        let yearPrincipalPaid = 0;
+        let yearInterestPaid = 0;
+        for (let month = 1; month <= 12; month++) {
+            if (balance <= 0) break;
+
+            const interest = balance * periodicRate;
+            const principal = monthlyPayment - interest;
+            yearTotalPaid += monthlyPayment;
+            yearPrincipalPaid += principal;
+            yearInterestPaid += interest;
+
+            balance -= principal;
+            if (balance < 0) balance = 0;
+
+            totalPaid += monthlyPayment;
+            principalPaid += principal;
+            interestPaid += interest;
+        }
+
+        years.push(year);
+        totalPaidData.push(yearTotalPaid);
+        principalPaidData.push(yearPrincipalPaid);
+        interestPaidData.push(yearInterestPaid);
+        balanceData.push(balance);
+    }
+
+    return {
+        years,
+        totalPaidData,
+        principalPaidData,
+        interestPaidData,
+        balanceData
+    };
+}
+
+// Function to update the amortization schedule table and chart
+function updateAmortizationSchedule() {
+    const price = parseFloat(document.getElementById('price').value);
+    const scenario = parseInt(document.getElementById('scenario').value);
+    const amount = parseFloat(document.getElementById(`down-payment-amount-${scenario}`).value);
+    const amortization = parseInt(document.getElementById(`amortization-${scenario}`).value);
+    const rate = parseFloat(document.getElementById(`rate-${scenario}`).value);
+    const frequency = document.getElementById(`frequency-${scenario}`).value;
+
+    const {
+        years,
+        totalPaidData,
+        principalPaidData,
+        interestPaidData,
+        balanceData
+    } = generateAmortizationSchedule(price, amount, amortization, rate, frequency);
+
+    const tableBody = document.getElementById('amortization-table').querySelector('tbody');
+    tableBody.innerHTML = years.map((year, index) => `
+        <tr>
+            <td>${year}</td>
+            <td>${formatNumber(totalPaidData[index])}</td>
+            <td>${formatNumber(principalPaidData[index])}</td>
+            <td>${formatNumber(interestPaidData[index])}</td>
+            <td>${formatNumber(balanceData[index])}</td>
+        </tr>
+    `).join('');
+
+    drawAmortizationChart(years, totalPaidData, principalPaidData, interestPaidData, balanceData);
+}
+
+// Format number as currency
+function formatNumber(number) {
+    return number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Call the function on scenario change and on page load
+document.getElementById('scenario').addEventListener('change', updateAmortizationSchedule);
+document.addEventListener('DOMContentLoaded', updateAmortizationSchedule);
+
 ===== /Users/alessandrocarli/CasAlta/casalta/app.py  =====
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
-@app.route('/calculate', methods=['POST'])
-def calculate():
-    data = request.get_json()
-    scenarios = data['scenarios']
-    results = []
-
-    for scenario in scenarios:
-        price = scenario['price']
-        down_payment = scenario['down_payment']
-        interest_rate = scenario['interest_rate'] / 100
-        years = scenario['years']
-        lawyer_fees = scenario['lawyer_fees']
-        title_insurance = scenario['title_insurance']
-        home_inspection = scenario['home_inspection']
-        appraisal_fees = scenario['appraisal_fees']
-        other_expenses = scenario['other_expenses']
-
-        principal = price - down_payment
-        monthly_interest_rate = interest_rate / 12
-        number_of_payments = years * 12
-        mortgage_payment = (principal * monthly_interest_rate * (1 + monthly_interest_rate) ** number_of_payments) / ((1 + monthly_interest_rate) ** number_of_payments - 1)
-
-        total_closing_costs = down_payment + lawyer_fees + title_insurance + home_inspection + appraisal_fees + other_expenses
-
-        amortization_schedule = []
-        remaining_balance = principal
-
-        for month in range(1, number_of_payments + 1):
-            interest_payment = remaining_balance * monthly_interest_rate
-            principal_payment = mortgage_payment - interest_payment
-            remaining_balance -= principal_payment
-            amortization_schedule.append({
-                'month': month,
-                'principal_payment': principal_payment,
-                'interest_payment': interest_payment,
-                'remaining_balance': remaining_balance
-            })
-
-        results.append({
-            'mortgage_payment': mortgage_payment,
-            'cash_needed_to_close': total_closing_costs,
-            'amortization_schedule': amortization_schedule
-        })
-
-    return jsonify(results)
 
 if __name__ == '__main__':
     app.run(debug=True)
@@ -223,147 +475,149 @@ if __name__ == '__main__':
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mortgage Calculator</title>
+    <title>Interactive Mortgage Calculator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 <body>
     <div class="container">
-        <h1>Mortgage Calculator</h1>
-        <form id="mortgage-form">
-            <div class="scenarios">
-                <div class="scenario" id="scenario1">
-                    <h3>Scenario 1</h3>
-                    <label for="price1">Price:</label>
-                    <input type="number" id="price1" name="price1" value="500000" required>
-                    <label for="down-payment1">$ Down Payment:</label>
-                    <input type="number" id="down-payment1" name="down_payment1" value="100000" required>
-                    <label for="down-payment-percent1">% Down Payment:</label>
-                    <input type="number" id="down-payment-percent1" name="down_payment_percent1" value="20" required>
-                    <label for="interest-rate1">Interest Rate (%):</label>
-                    <input type="number" step="0.01" id="interest-rate1" name="interest_rate1" value="3.5" required>
-                    <label for="years1">Years:</label>
-                    <input type="number" id="years1" name="years1" value="30" required>
-                    <label for="lawyer-fees1">Lawyer Fees:</label>
-                    <input type="number" id="lawyer-fees1" name="lawyer_fees1" value="2000" required>
-                    <label for="title-insurance1">Title Insurance:</label>
-                    <input type="number" id="title-insurance1" name="title_insurance1" value="500" required>
-                    <label for="home-inspection1">Home Inspection:</label>
-                    <input type="number" id="home-inspection1" name="home_inspection1" value="400" required>
-                    <label for="appraisal-fees1">Appraisal Fees:</label>
-                    <input type="number" id="appraisal-fees1" name="appraisal_fees1" value="300" required>
-                    <label for="other-expenses1">Other Expenses:</label>
-                    <select id="other-expenses1" name="other_expenses1">
-                        <option value="0">None</option>
-                        <option value="1000">Option 1: $1000</option>
-                        <option value="2000">Option 2: $2000</option>
-                        <option value健一: $3000</option>
-                    </select>
+        <h1>Interactive Mortgage Calculator</h1>
+        <div class="input-group">
+            <label for="price">Price:</label>
+            <input type="number" id="price" value="100000">
+        </div>
+        <div class="input-group">
+            <label for="location">Location:</label>
+            <input type="text" id="location" value="Toronto, ON">
+        </div>
+        <div class="input-group">
+            <label for="exchange-rate">Exchange Rate (Results):</label>
+            <input type="number" id="exchange-rate" value="1" step="0.01" min="0">
+        </div>
+        <div class="options" id="options-container">
+            <!-- Options will be dynamically generated here -->
+        </div>
+        <div class="input-group">
+            <label for="scenario">Down payment options:</label>
+            <select id="scenario" onchange="updateCloseCost()">
+                <option value="1">Scenario 1</option>
+                <option value="2">Scenario 2</option>
+                <option value="3">Scenario 3</option>
+                <option value="4">Scenario 4</option>
+            </select>
+        </div>
+       
+        <h2>Financial Overview</h2>
+        <div class="financial-overview">
+            <div id="close-costs">
+                <h3>Cash needed to close</h3>
+                <div class="input-group">
+                    <label>Down payment:</label>
+                    <span id="down-payment"></span>
+                    <span id="down-payment-shared"></span>
                 </div>
-                
-                <div class="scenario" id="scenario2">
-                    <h3>Scenario 2</h3>
-                    <label for="price2">Price:</label>
-                    <input type="number" id="price2" name="price2" value="600000" required>
-                    <label for="down-payment2">$ Down Payment:</label>
-                    <input type="number" id="down-payment2" name="down_payment2" value="150000" required>
-                    <label for="down-payment-percent2">% Down Payment:</label>
-                    <input type="number" id="down-payment-percent2" name="down_payment_percent2" value="25" required>
-                    <label for="interest-rate2">Interest Rate (%):</label>
-                    <input type="number" step="0.01" id="interest-rate2" name="interest_rate2" value="3.75" required>
-                    <label for="years2">Years:</label>
-                    <input type="number" id="years2" name="years2" value="25" required>
-                    <label for="lawyer-fees2">Lawyer Fees:</label>
-                    <input type="number" id="lawyer-fees2" name="lawyer_fees2" value="2500" required>
-                    <label for="title-insurance2">Title Insurance:</label>
-                    <input type="number" id="title-insurance2" name="title_insurance2" value="600" required>
-                    <label for="home-inspection2">Home Inspection:</label>
-                    <input type="number" id="home-inspection2" name="home_inspection2" value="500" required>
-                    <label for="appraisal-fees2">Appraisal Fees:</label>
-                    <input type="number" id="appraisal-fees2" name="appraisal_fees2" value="350" required>
-                    <label for="other-expenses2">Other Expenses:</label>
-                    <select id="other-expenses2" name="other_expenses2">
-                        <option value="0">None</option>
-                        <option value="1500">Option 1: $1500</option>
-                        <option value="2500">Option 2: $2500</option>
-                        <option value="3500">Option 3: $3500</option>
-                    </select>
+                <div class="input-group">
+                    <label>Lawyer fees:</label>
+                    <input type="number" id="lawyer-fees" value="1000" onchange="updateCloseCost()">
+                    <span id="lawyer-fees-shared"></span>
                 </div>
-                
-                <div class="scenario" id="scenario3">
-                    <h3>Scenario 3</hMultiplier>
-                    <label for="price3">Price:</label>
-                    <input type="number" id="price3" name="price3" value="700000" required>
-                    <label for="down-payment3">$ Down Payment:</label>
-                    <input type="number" id="down-payment3" name="down_payment3" value="200000" required>
-                    <label for="down-payment-percent3">% Down Payment:</label>
-                    <input type="number" id="down-payment-percent3" name="down_payment_percent3" value="28" required>
-                    <label for="interest-rate3">Interest Rate (%):</label>
-                    <input type="number" step="0.01" id="interest-rate3" name="interest_rate3" value="4" required>
-                    <label for="years3">Years:</label>
-                    <input type="number" id="years3" name="years3" value="30" required>
-                    <label for="lawyer-fees3">Lawyer Fees:</label>
-                    <input type="number" id="lawyer-fees3" name="lawyer_fees3" value="3000" required>
-                    <label for="title-insurance3">Title Insurance:</label>
-                    <input type="number" id="title-insurance3" name="title_insurance3" value="700" required>
-                    <label for="home-inspection3">Home Inspection:</label>
-                    <input type="number" id="home-inspection3" name="home_inspection3" value="600" required>
-                    <label for="appraisal-fees3">Appraisal Fees:</label>
-                    <input type="number" id="appraisal-fees3" name="appraisal_fees3" value="400" required>
-                    <label for="other-expenses3">Other Expenses:</label>
-                    <select id="other-expenses3" name="other_expenses3">
-                        <option value="0">None</option>
-                        <option value="2000">Option 1: $2000</option>
-                        <option value="3000">Option 2: $3000</option>
-                        <option value="4000">Option 3: $4000</option>
-                    </select>
+                <div class="input-group">
+                    <label>Title insurance:</label>
+                    <input type="number" id="title-insurance" value="900" onchange="updateCloseCost()">
+                    <span id="title-insurance-shared"></span>
                 </div>
-                
-                <div class="scenario" id="scenario4">
-                    <h3>Scenario 4</h3>
-                    <label for="price4">Price:</label>
-                    <input type="number" id="price4" name="price4" value="800000" required>
-                    <label for="down-payment4">$ Down Payment:</label>
-                    <input type="number" id="down-payment4" name="down_payment4" value="250000" required>
-                    <label for="down-payment-percent4">% Down Payment:</label>
-                    <input type="number" id="down-payment-percent4" name="down_payment_percent4" value="30" required>
-                    <label for="interest-rate4">Interest Rate (%):</label>
-                    <input type="number" step="0.01" id="interest-rate4" name="interest_rate4" value="4.25" required>
-                    <label for="years4">Years:</label>
-                    <input type="number" id="years4" name="years4" value="20" required>
-                    <label for="lawyer-fees4">Lawyer Fees:</label>
-                    <input type="number" id="lawyer-fees4" name="lawyer_fees4" value="3500" required>
-                    <label for="title-insurance4">Title Insurance:</label>
-                    <input type="number" id="title-insurance4" name="title_insurance4" value="800" required>
-                    <label for="home-inspection4">Home Inspection:</label>
-                    <input type="number" id="home-inspection4" name="home_inspection4" value="700" required>
-                    <label for="appraisal-fees4">Appraisal Fees:</label>
-                    <input type="number" id="appraisal-fees4" name="appraisal_fees4" value="450" required>
-                    <label for="other-expenses4">Other Expenses:</label>
-                    <select id="other-expenses4" name="other_expenses4">
-                        <option value="0">None</option>
-                        <option value="2500">Option 1: $2500</option>
-                        <option value="3500">Option 2: $3500</option>
-                        <option value="4500">Option 3: $4500</option>
-                    </select>
+                <div class="input-group">
+                    <label>Home inspection:</label>
+                    <input type="number" id="home-inspection" value="500" onchange="updateCloseCost()">
+                    <span id="home-inspection-shared"></span>
                 </div>
-                
+                <div class="input-group">
+                    <label>Appraisal fees:</label>
+                    <input type="number" id="appraisal-fees" value="300" onchange="updateCloseCost()">
+                    <span id="appraisal-fees-shared"></span>
+                </div>
+                <div class="input-group">
+                    <label>Cash needed to close:</label>
+                    <span id="cash-needed-to-close"></span>
+                    <span id="cash-needed-to-close-shared"></span>
+                </div>
             </div>
-            <button type="submit">Calculate</button>
-        </form>
-        <div id="mortgage-result"></div>
-        <div class="section" id="cash-needed-section">
-            <h2>Cash Needed to Close</h2>
-            <div id="cash-needed-result"></div>
+
+            <div id="monthly-expenses">
+                <h3>Monthly expenses</h3>
+                <div class="input-group">
+                    <label for="property-tax">Property tax:</label>
+                    <input type="number" id="property-tax" value="2000" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="utilities">Utilities:</label>
+                    <input type="number" id="utilities" value="150" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="property-insurance">Property Insurance:</label>
+                    <input type="number" id="property-insurance" value="800" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="phone">Phone:</label>
+                    <input type="number" id="phone" value="50" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="cable">Cable:</label>
+                    <input type="number" id="cable" value="100" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label for="internet">Internet:</label>
+                    <input type="number" id="internet" value="60" onchange="updateMonthlyExpenses()">
+                </div>
+                <div class="input-group">
+                    <label>Total Monthly Expenses:</label>
+                    <span id="monthly-expenses-total"></span>
+                </div>
+                <div class="input-group">
+                    <label>Total Monthly Cost:</label>
+                    <span id="total-monthly-cost"></span>
+                </div>
+            </div>
+            <div id="monthly-revenues">
+                <h3>Monthly Revenues</h3>
+
+                <div class="input-group">
+                    <label for="rented-days">Number of rented days:</label>
+                    <input type="number" id="rented-days" value="15" onchange="updateRevenues()">
+                </div>
+                <div class="input-group">
+                    <label for="estimated-rented-price">Estimated rented price per day:</label>
+                    <input type="number" id="estimated-rented-price" value="100" onchange="updateRevenues()">
+                </div>
+                <div class="input-group">
+                    <label>Total Revenue:</label>
+                    <span id="total-revenue"></span>
+                </div>
+                <div class="input-group">
+                    <label>Annual Profit:</label>
+                    <span id="annual-profit"></span>
+                </div>
+                
+            </div>            
         </div>
-        <div class="section" id="monthly-expenses-section">
-            <h2>Monthly Expenses</h2>
-            <div id="monthly-expenses-result"></div>
-        </div>
-        <div class="section" id="amortization-schedule-section">
-            <h2>Amortization Schedule</h2>
-            <canvas id="amortization-chart"></canvas>
-        </div>
+        <h2>Amortization Schedule</h2>
+        <canvas id="amortization-chart" width="800" height="400"></canvas>
+
+        <table id="amortization-table">
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Total Paid</th>
+                    <th>Principal Paid</th>
+                    <th>Interest Paid</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be dynamically generated here -->
+            </tbody>
+        </table>
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
