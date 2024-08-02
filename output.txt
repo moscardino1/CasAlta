@@ -1,14 +1,12 @@
+ 
+===== /Users/alessandrocarli/CasAlta/casalta/static/options.js  =====
+export const optionCount = 4;
 
-
-===== /Users/alessandrocarli/CasAlta/casalta/static/script.js  =====
-
-const optionCount = 4;
-
-function formatNumber(number) {
+export function formatNumber(number) {
     return number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function createOptionElement(index) {
+export function createOptionElement(index) {
     return `
         <div class="option" id="option${index}">
             <h3>Option ${index}</h3>
@@ -49,6 +47,14 @@ function createOptionElement(index) {
     `;
 }
 
+===== /Users/alessandrocarli/CasAlta/casalta/static/script.js  =====
+
+import { optionCount, formatNumber, createOptionElement } from './options.js';
+import { updateAmortizationSchedule } from './amortizations.js';
+
+// Your existing code in script.js
+
+
 function calculateMortgageDetails(price, percent, amount, amortization, rate, frequency) {
     const totalMortgage = price - amount;
     const periodicRate = (rate / 100) / (frequency === 'monthly' ? 12 : 26);
@@ -60,9 +66,11 @@ function calculateMortgageDetails(price, percent, amount, amortization, rate, fr
     return { totalMortgage, mortgagePayment };
 }
 
+
+
 function updateCalculations() {
-    const price = parseFloat(document.getElementById('price').value);
-    const exchangeRate = parseFloat(document.getElementById('exchange-rate').value);
+    const price = parseFloat(document.getElementById('price').value) || 0;
+    const exchangeRate = parseFloat(document.getElementById('exchange-rate').value) || 1;
 
     for (let i = 1; i <= optionCount; i++) {
         const percentInput = document.getElementById(`down-payment-percent-${i}`);
@@ -71,32 +79,51 @@ function updateCalculations() {
         const rateInput = document.getElementById(`rate-${i}`);
         const frequencyInput = document.getElementById(`frequency-${i}`);
         
-        const percent = parseFloat(percentInput.value);
-        const amount = parseFloat(amountInput.value);
-        const amortization = parseInt(amortizationInput.value);
-        const rate = parseFloat(rateInput.value);
+        const percent = parseFloat(percentInput.value.replace(/,/g, '')) || 0;
+        const amount = parseFloat(amountInput.value.replace(/,/g, '')) || 0;
+        const amortization = parseInt(amortizationInput.value) || 0;
+        const rate = parseFloat(rateInput.value) || 0;
         const frequency = frequencyInput.value;
 
+     
         // Update down payment amount or percent
         if (document.activeElement === percentInput) {
-            amountInput.value = formatNumber(price * percent / 100);
+            updateAmountFromPercent(price, percent, amountInput);
         } else if (document.activeElement === amountInput) {
-            percentInput.value = formatNumber(amount / price * 100);
+            updatePercentFromAmount(price, amount, percentInput);
         }
-        
-        const { totalMortgage, mortgagePayment } = calculateMortgageDetails(price, percent, amount, amortization, rate, frequency);
+
+        const percentUpdated = parseFloat(percentInput.value.replace(/,/g, '')) || 0;
+        const amountUpdated = parseFloat(amountInput.value.replace(/,/g, '')) || 0;
+
+ 
+        const { totalMortgage, mortgagePayment } = calculateMortgageDetails(price, percentUpdated, amountUpdated, amortization, rate, frequency);
         const totalMortgageShared = totalMortgage / 2;
         const mortgagePaymentShared = mortgagePayment / 2;
-        
+
         document.getElementById(`total-mortgage-${i}`).textContent = formatNumber(totalMortgage / exchangeRate);
         document.getElementById(`total-mortgage-${i}-shared`).textContent = `(shared: ${formatNumber(totalMortgageShared / exchangeRate)})`;
         document.getElementById(`mortgage-payment-${i}`).textContent = formatNumber(mortgagePayment / exchangeRate);
         document.getElementById(`mortgage-payment-${i}-shared`).textContent = `(shared: ${formatNumber(mortgagePaymentShared / exchangeRate)})`;
     }
+
     updateCloseCost();
     updateMonthlyExpenses();
-    updateRevenues() 
+    updateRevenues();
 }
+
+function updateAmountFromPercent(price, percent, amountInput) {
+    const calculatedAmount = price * percent / 100;
+     // Directly set value without formatting to see if it updates
+    amountInput.value = calculatedAmount;
+}
+
+function updatePercentFromAmount(price, amount, percentInput) {
+    const calculatedPercent = (amount / price) * 100;
+     // Directly set value without formatting to see if it updates
+    percentInput.value = calculatedPercent;
+}
+
 
 function updateCloseCost() {
     const scenario = parseInt(document.getElementById('scenario').value);
@@ -156,10 +183,12 @@ function updateRevenues() {
 
     // Calculate Total Revenue and Annual Profit
     const totalRevenue = rentedDays * estimatedRentedPrice;
-    const annualProfit = totalRevenue - (totalMonthlyCost * 12);
+    const annualCost = (totalMonthlyCost * 12);
+    const annualProfit = totalRevenue - annualCost;
 
     // Update the UI
     document.getElementById('total-revenue').textContent = formatNumber(totalRevenue);
+    document.getElementById('annual-cost').textContent = formatNumber(annualCost);
     document.getElementById('annual-profit').textContent = formatNumber(annualProfit);
 }
 
@@ -178,98 +207,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updateCalculations(); // Initial calculation
 }); 
-// Function to calculate amortization schedule
-function generateAmortizationSchedule(price, amount, amortization, rate, frequency) {
-    const totalMortgage = price - amount;
-    const periodicRate = (rate / 100) / (frequency === 'monthly' ? 12 : 26);
-    const numberOfPayments = amortization * (frequency === 'monthly' ? 12 : 26);
-    
-    // Calculate monthly payment
-    const monthlyPayment = totalMortgage * 
-        (periodicRate * Math.pow(1 + periodicRate, numberOfPayments)) / 
-        (Math.pow(1 + periodicRate, numberOfPayments) - 1);
+ 
 
-    let balance = totalMortgage;
-    let totalPaid = 0;
-    let principalPaid = 0;
-    let interestPaid = 0;
+// Call the function on scenario change and on page load
+document.getElementById('scenario').addEventListener('change', updateAmortizationSchedule);
+document.addEventListener('DOMContentLoaded', updateAmortizationSchedule);
 
-    const years = [];
-    const totalPaidData = [];
-    const principalPaidData = [];
-    const interestPaidData = [];
-    const balanceData = [];
+===== /Users/alessandrocarli/CasAlta/casalta/static/amortizations.js  =====
 
-    for (let year = 1; year <= amortization; year++) {
-        let yearTotalPaid = 0;
-        let yearPrincipalPaid = 0;
-        let yearInterestPaid = 0;
-        for (let month = 1; month <= 12; month++) {
-            if (balance <= 0) break;
 
-            const interest = balance * periodicRate;
-            const principal = monthlyPayment - interest;
-            yearTotalPaid += monthlyPayment;
-            yearPrincipalPaid += principal;
-            yearInterestPaid += interest;
+import {  formatNumber } from './options.js';
 
-            balance -= principal;
-            if (balance < 0) balance = 0;
-
-            totalPaid += monthlyPayment;
-            principalPaid += principal;
-            interestPaid += interest;
-        }
-
-        years.push(year);
-        totalPaidData.push(yearTotalPaid);
-        principalPaidData.push(yearPrincipalPaid);
-        interestPaidData.push(yearInterestPaid);
-        balanceData.push(balance);
-    }
-
-    return {
-        years,
-        totalPaidData,
-        principalPaidData,
-        interestPaidData,
-        balanceData
-    };
-}
-
-// Function to update the amortization schedule table
-function updateAmortizationSchedule() {
-    const price = parseFloat(document.getElementById('price').value);
-    const scenario = parseInt(document.getElementById('scenario').value);
-    const amount = parseFloat(document.getElementById(`down-payment-amount-${scenario}`).value);
-    const amortization = parseInt(document.getElementById(`amortization-${scenario}`).value);
-    const rate = parseFloat(document.getElementById(`rate-${scenario}`).value);
-    const frequency = document.getElementById(`frequency-${scenario}`).value;
-
-    const {
-        years,
-        totalPaidData,
-        principalPaidData,
-        interestPaidData,
-        balanceData
-    } = generateAmortizationSchedule(price, amount, amortization, rate, frequency);
-
-    const tableBody = document.getElementById('amortization-table').querySelector('tbody');
-    tableBody.innerHTML = years.map((year, index) => `
-        <tr>
-            <td>${year}</td>
-            <td>${formatNumber(totalPaidData[index])}</td>
-            <td>${formatNumber(principalPaidData[index])}</td>
-            <td>${formatNumber(interestPaidData[index])}</td>
-            <td>${formatNumber(balanceData[index])}</td>
-        </tr>
-    `).join('');
-}
-
-// Format number as currency
-function formatNumber(number) {
-    return number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 let amortizationChart = null; // Variable to store the Chart instance
 
 // Function to clear the existing chart
@@ -359,7 +307,7 @@ function drawAmortizationChart(years, totalPaidData, principalPaidData, interest
 }
 
 // Function to generate amortization schedule data
-function generateAmortizationSchedule(price, amount, amortization, rate, frequency) {
+function generateAmortizationSchedule(price, amount, amortization, rate, frequency, appreciationRate) {
     const totalMortgage = price - amount;
     const periodicRate = (rate / 100) / (frequency === 'monthly' ? 12 : 26);
     const numberOfPayments = amortization * (frequency === 'monthly' ? 12 : 26);
@@ -373,17 +321,23 @@ function generateAmortizationSchedule(price, amount, amortization, rate, frequen
     let totalPaid = 0;
     let principalPaid = 0;
     let interestPaid = 0;
+    let houseValue = price; // Initialize house value
 
     const years = [];
     const totalPaidData = [];
     const principalPaidData = [];
     const interestPaidData = [];
     const balanceData = [];
+    const houseValueData = []; // Array to store house values
 
     for (let year = 1; year <= amortization; year++) {
         let yearTotalPaid = 0;
         let yearPrincipalPaid = 0;
         let yearInterestPaid = 0;
+
+        // Update house value based on appreciation
+        houseValue *= (1 + appreciationRate / 100);
+
         for (let month = 1; month <= 12; month++) {
             if (balance <= 0) break;
 
@@ -406,6 +360,7 @@ function generateAmortizationSchedule(price, amount, amortization, rate, frequen
         principalPaidData.push(yearPrincipalPaid);
         interestPaidData.push(yearInterestPaid);
         balanceData.push(balance);
+        houseValueData.push(houseValue); // Store the house value for the year
     }
 
     return {
@@ -413,26 +368,30 @@ function generateAmortizationSchedule(price, amount, amortization, rate, frequen
         totalPaidData,
         principalPaidData,
         interestPaidData,
-        balanceData
+        balanceData,
+        houseValueData
     };
 }
 
+
 // Function to update the amortization schedule table and chart
-function updateAmortizationSchedule() {
+export function updateAmortizationSchedule() {
     const price = parseFloat(document.getElementById('price').value);
     const scenario = parseInt(document.getElementById('scenario').value);
     const amount = parseFloat(document.getElementById(`down-payment-amount-${scenario}`).value);
     const amortization = parseInt(document.getElementById(`amortization-${scenario}`).value);
     const rate = parseFloat(document.getElementById(`rate-${scenario}`).value);
     const frequency = document.getElementById(`frequency-${scenario}`).value;
+    const appreciationRate = parseFloat(document.getElementById('yearly-appreciation').value) || 0;
 
     const {
         years,
         totalPaidData,
         principalPaidData,
         interestPaidData,
-        balanceData
-    } = generateAmortizationSchedule(price, amount, amortization, rate, frequency);
+        balanceData,
+        houseValueData
+    } = generateAmortizationSchedule(price, amount, amortization, rate, frequency, appreciationRate);
 
     const tableBody = document.getElementById('amortization-table').querySelector('tbody');
     tableBody.innerHTML = years.map((year, index) => `
@@ -442,20 +401,12 @@ function updateAmortizationSchedule() {
             <td>${formatNumber(principalPaidData[index])}</td>
             <td>${formatNumber(interestPaidData[index])}</td>
             <td>${formatNumber(balanceData[index])}</td>
+            <td>${formatNumber(houseValueData[index])}</td> <!-- New House Value Column -->
         </tr>
     `).join('');
 
     drawAmortizationChart(years, totalPaidData, principalPaidData, interestPaidData, balanceData);
 }
-
-// Format number as currency
-function formatNumber(number) {
-    return number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// Call the function on scenario change and on page load
-document.getElementById('scenario').addEventListener('change', updateAmortizationSchedule);
-document.addEventListener('DOMContentLoaded', updateAmortizationSchedule);
 
 ===== /Users/alessandrocarli/CasAlta/casalta/app.py  =====
 from flask import Flask, render_template
@@ -488,13 +439,14 @@ if __name__ == '__main__':
             <input type="number" id="price" value="100000">
         </div>
         <div class="input-group">
-            <label for="location">Location:</label>
-            <input type="text" id="location" value="Toronto, ON">
-        </div>
-        <div class="input-group">
             <label for="exchange-rate">Exchange Rate (Results):</label>
             <input type="number" id="exchange-rate" value="1" step="0.01" min="0">
         </div>
+        <div class="input-group">
+            <label for="yearly-appreciation">Yearly Appreciation Rate (%):</label>
+            <input type="number" id="yearly-appreciation" step="0.01" value="0.2">
+        </div>
+ 
         <div class="options" id="options-container">
             <!-- Options will be dynamically generated here -->
         </div>
@@ -548,7 +500,7 @@ if __name__ == '__main__':
                 <h3>Monthly expenses</h3>
                 <div class="input-group">
                     <label for="property-tax">Property tax:</label>
-                    <input type="number" id="property-tax" value="2000" onchange="updateMonthlyExpenses()">
+                    <input type="number" id="property-tax" value="100" onchange="updateMonthlyExpenses()">
                 </div>
                 <div class="input-group">
                     <label for="utilities">Utilities:</label>
@@ -556,7 +508,7 @@ if __name__ == '__main__':
                 </div>
                 <div class="input-group">
                     <label for="property-insurance">Property Insurance:</label>
-                    <input type="number" id="property-insurance" value="800" onchange="updateMonthlyExpenses()">
+                    <input type="number" id="property-insurance" value="50" onchange="updateMonthlyExpenses()">
                 </div>
                 <div class="input-group">
                     <label for="phone">Phone:</label>
@@ -595,6 +547,10 @@ if __name__ == '__main__':
                     <span id="total-revenue"></span>
                 </div>
                 <div class="input-group">
+                    <label>Annual Cost:</label>
+                    <span id="annual-cost"></span>
+                </div>
+                <div class="input-group">
                     <label>Annual Profit:</label>
                     <span id="annual-profit"></span>
                 </div>
@@ -612,6 +568,7 @@ if __name__ == '__main__':
                     <th>Principal Paid</th>
                     <th>Interest Paid</th>
                     <th>Balance</th>
+                    <th>Appreciation</th>
                 </tr>
             </thead>
             <tbody>
@@ -619,7 +576,7 @@ if __name__ == '__main__':
             </tbody>
         </table>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
 

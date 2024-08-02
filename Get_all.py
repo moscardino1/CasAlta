@@ -7,7 +7,7 @@ def write_file_contents(directory, output_file):
     for filename in os.listdir(directory):
         filepath = os.path.join(directory, filename)
         if os.path.isfile(filepath):
-            if filepath.endswith(".css") or filepath.endswith(".html") or filepath.endswith(".py") or filepath.endswith(".js")  and filename !='Get_all.py':
+            if ( filepath.endswith(".css") or filepath.endswith(".html") or filepath.endswith(".py") or filepath.endswith(".js") ) and filename !='Get_all.py':
             # if filepath.endswith(".py") or filepath.endswith(".html") or filepath.endswith(".js") and filename !='Get_all.py':
                 with open(output_file, "a") as f:
                     f.write(f"===== {filepath}  =====\n")
